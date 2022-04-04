@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tis.mapper.MemberMapper">
+
+	<!-- 회원 멤버 칼럼 설정 -->
+	<resultMap type="com.tis.domain.MemberVO" id="memberMap">
+		<id property="memberId" column="memberId"/>
+		<result property="memberPw" column="memberPw"/>
+		<result property="memberName" column="memberName"/>
+		<result property="phone" column="phone"/>
+		<result property="email" column="email"/>
+		<result property="address" column="address"/>
+		<result property="addressSub" column="addressSub"/>
+		<result property="zipcode" column="zipcode"/>
+		<result property="gender" column="gender"/>
+		<result property="birth" column="birth"/>
+		<result property="regDate" column="regDate"/>
+		<collection property="authList" resultMap="authMap"></collection>
+	</resultMap>
+	
+	<resultMap type="com.tis.security.domain.AuthVO" id="authMap">
+		<result property="memberId" column="memberId"/>
+		<result property="auth" column="auth"/>
+	</resultMap>
+	
+	<!-- 로그인 -->
+	<select id="getLogin" resultType="com.tis.domain.MemberVO">
+		SELECT * 
+		FROM tbl_member
+		WHERE memberId = #{memberId} AND memberPw = #{memberPw}
+	</select>
+
+	
+	<!-- 회원 조회  WITH ID-->
+	<select id="getMemberWithId" resultMap="memberMap">
+		SELECT m.memberId,memberPw,memberName,phone,email,address,addressSub,zipcode,gender,birth,auth
+		FROM tbl_member m LEFT JOIN tbl_member_auth a
+		ON m.memberId = a.memberId 
+		WHERE m.memberId = #{memberId}
+	</select>
+	
+	<!-- 회원 조회 WITH EMAIL -->
+	<select id="getMemberWithEmail" resultType="com.tis.domain.MemberVO">
+		SELECT *
+		FROM tbl_member
+		WHERE email = #{email}
+	</select>
+	
+	<!-- 회원 가입 -->
+	<insert id="insertMember">
+		INSERT INTO tbl_member (memberId,memberPw,memberName,phone,email,
+		address,addressSub,zipcode,gender,birth)
+		VALUES (#{memberId},#{memberPw},#{memberName},#{phone},#{email},
+		#{address},#{addressSub},#{zipcode},#{gender},#{birth})	
+	</insert>
+	
+	<!-- 권한 부여 -->
+	<insert id="insertAuth">
+		INSERT INTO tbl_member_auth (memberId)
+		VALUES (#{memberId})		
+	</insert>
+	
+	<!-- 회원정보수정 -->
+	<update id="updateMember" parameterType="com.tis.domain.MemberVO">
+		update tbl_member
+			set
+				memberPw = #{memberPw},
+				memberName = #{memberName},
+				email = #{email},
+				phone = #{phone},
+				address = #{address},
+				addressSub = #{addressSub},
+				zipcode = #{zipcode},
+				gender = #{gender},
+				birth = #{birth}
+			where memberId = #{memberId}
+	</update>
+	
+	<!-- 회원탈퇴 tbl_auth -->
+	<delete id="authDelete" parameterType="String">
+		delete from tbl_member_auth where memberId = #{memberId}
+	</delete>
+	<!-- 회원탈퇴 tbl_member -->
+	<delete id="memberDelete" parameterType="String">
+		delete from tbl_member where memberId = #{memberId}
+	</delete>
+</mapper>

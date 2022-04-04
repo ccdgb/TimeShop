@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tis.mapper.BoardMapper">
+
+	<!-- 검색 조건문 -->
+	<sql id="criteria">
+		<trim prefix="AND (" suffix=")" prefixOverrides="OR">
+            <foreach collection="typeArr" item="type">
+                <trim prefix="OR">
+                    <choose>
+                        <when test="type == 'T'.toString()">
+                            title like '%'||#{keyword}||'%' 
+                        </when>
+                        <when test="type == 'C'.toString()">
+                            content like '%'||#{keyword}||'%' 
+                        </when>
+                        <when test="type == 'W'.toString()">
+                            writer like '%'||#{keyword}||'%' 
+                        </when>
+                    </choose>
+                </trim>
+            </foreach>
+        </trim>
+	</sql>
+	
+	<!-- 게시물 목록 -->
+	<select id="getBoardList" resultType="com.tis.domain.BoardVO">
+		<![CDATA[
+        
+	        select bno, title, content, writer, regdate, viewcnt, category
+	        	from(
+	        
+	                select rownum  as rn, bno, title, content, writer, regdate, viewcnt, category
+	                  
+	                from (select * from tbl_board where bgno = #{bgno} order by bno desc)
+	                where rownum <= #{pageNum} * #{amount} 
+     	]]>
+     			<if test="keyword != null">
+     				<include refid="criteria"></include>
+     			</if>
+     	
+     	<![CDATA[
+     				)
+     				
+	        where rn > (#{pageNum} -1) * #{amount}
+	        order by rn
+    	]]>
+    
+	</select>
+	
+	<!-- 게시물 작성 -->
+ 	<insert id="boardWrite" parameterType="com.tis.domain.BoardVO"> 		
+		insert into tbl_board(bno, bgno, category, title, content, writer)
+			values (SEQ_BOARD.nextval, #{bgno}, #{category}, #{title}, #{content}, #{writer})
+	</insert>
+	
+	<!-- 게시물 조회 -->
+	<select id="boardView" parameterType="com.tis.domain.BoardVO" resultType="com.tis.domain.BoardVO">
+		SELECT
+				b.*
+		FROM
+				(select bno, bgno, title, content, writer, regdate, viewcnt, category,
+						LEAD(bno, 1) OVER (ORDER BY bno DESC) AS nextno,
+        				LEAD(title, 1, '다음글이 없습니다') OVER (ORDER BY bno DESC) AS nexttit,
+        				LAG(bno, 1) OVER (ORDER BY bno DESC) AS preno,
+						LAG(title, 1, '이전글이 없습니다') OVER (ORDER BY bno DESC) AS pretit
+				from tbl_board
+				where bgno = #{bgno})b <!-- where bgno = #{bgno} -->
+		where
+				b.bno = #{bno}
+	</select>
+	
+	<!-- 게시물 수정 -->
+	<update id="boardmodify" parameterType="com.tis.domain.BoardVO">
+		update tbl_board
+			set
+				title = #{title},
+				category = #{category},
+				content = #{content},
+				writer = #{writer}
+			where bno = #{bno}
+	</update>
+	
+	<!-- 게시글 총 갯수 조회 -->
+	<select id="getBoardTotal" resultType="int">
+		SELECT count(*) FROM tbl_board
+		<if test="keyword != null">
+			where bgno = #{bgno} <include refid="criteria"></include>
+		</if>
+	</select>
+	
+	<!-- 조회수 올리기 -->
+	<update id="updateViewCnt" parameterType="com.tis.domain.BoardVO">
+		update tbl_board set viewcnt = viewcnt + 1 where bno = #{bno}
+	</update>
+	
+	<!-- 게시글 삭제 -->
+	<delete id="boardDelete" parameterType="com.tis.domain.BoardVO">
+		delete from tbl_board where bno = #{bno}
+	</delete>
+	
+	<!-- 상품리스트 출력 -->
+	<select id="boardGetGoodsList" resultType="com.tis.domain.GoodsVO">
+		select *
+		from tbl_goods
+		order by goodsNo desc
+	</select>
+	
+	<!-- 상품등록 goodsInsert -->
+	<insert id="goodsInsert" parameterType="com.tis.domain.GoodsVO"> 		
+		insert into tbl_goods(goodsNo, goodsCategory, goodsName, goodsContent, goodsPrice, goodsUnit, goodsWeight, goodsDelivery, goodsPackage, goodsAllergy, goodsImage)
+			values (seq_goods.nextval, #{goodsCategory}, #{goodsName}, #{goodsContent}, #{goodsPrice}, #{goodsUnit}, #{goodsWeight}, #{goodsDelivery}, #{goodsPackage}, #{goodsAllergy}, #{goodsImage})
+	</insert>
+	
+	<!-- 상품 삭제 -->
+	<delete id="goodsDelete" parameterType="com.tis.domain.GoodsVO">
+		delete from tbl_goods where goodsNo = #{goodsNo}
+	</delete>
+</mapper>

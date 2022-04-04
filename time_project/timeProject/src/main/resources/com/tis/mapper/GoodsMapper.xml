@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tis.mapper.GoodsMapper">
+	
+	<!--상품 리스트 조회 WITH PAGING  -->
+ 	<select id="getGoodsListWithPaging" resultType="com.tis.domain.GoodsVO">
+		<![CDATA[
+		SELECT 
+			    goodsNo,goodsCategory,goodsName,goodsContent,goodsPrice,goodsImage
+		FROM ( SELECT
+			   rownum rn,goodsNo,goodsCategory,goodsName,goodsContent,goodsPrice,goodsImage
+		       FROM 
+		            (SELECT
+		             goodsNo,goodsCategory,goodsName,goodsContent,goodsPrice,goodsImage,categoryTitle
+		             FROM tbl_goods g LEFT JOIN tbl_category c
+		             ON g.goodsCategory = c.categorySubTitle
+		]]>
+		    		<if test='priceSort != null and (priceSort eq "asc".toString())'>
+						ORDER BY goodsPrice ASC
+					</if>
+					<if test='priceSort != null and (priceSort eq "desc".toString())'>
+						ORDER BY goodsPrice DESC
+					</if>
+					<if test='priceSort != null and (priceSort eq "new".toString())'>
+						ORDER BY goodsregDate DESC
+					</if>
+
+		       
+	    <![CDATA[)	           
+       		   WHERE categoryTitle = #{goodsCategory}
+		       AND rownum <= #{cri.pageNum} * #{cri.amount} 
+			   )
+		WHERE rn > (#{cri.pageNum} -1) * #{cri.amount} 
+		 ]]>
+	</select>	
+	
+
+	<!-- 상품 서브리스트 조회 -->
+	<select id="getGoodsSubListWithPaging" resultType="com.tis.domain.GoodsVO">
+		<![CDATA[
+		SELECT 
+			    goodsNo,goodsCategory,goodsName,goodsContent,goodsPrice,goodsImage,categoryTitle
+		FROM ( SELECT 
+			   rownum rn,goodsNo,goodsCategory,goodsName,goodsContent,goodsPrice,goodsImage,categoryTitle
+		       FROM 
+		            (SELECT
+		             goodsNo,goodsCategory,goodsName,goodsContent,goodsPrice,goodsImage,categoryTitle
+		             FROM tbl_goods g LEFT JOIN tbl_category c
+		             ON g.goodsCategory = c.categorySubTitle
+		]]>
+		    		<if test='priceSort != null and (priceSort eq "asc".toString())'>
+						ORDER BY goodsPrice ASC
+					</if>
+					<if test='priceSort != null and (priceSort eq "desc".toString())'>
+						ORDER BY goodsPrice DESC
+					</if>
+					<if test='priceSort != null and (priceSort eq "new".toString())'>
+						ORDER BY goodsregDate DESC
+					</if>
+					
+	    <![CDATA[) 		           
+       		   WHERE goodsCategory = #{categorySubTitle}
+		       AND rownum <= #{cri.pageNum} * #{cri.amount} 
+		      )
+		WHERE rn > (#{cri.pageNum} -1) * #{cri.amount} 
+		 ]]>
+	</select>
+	
+	<!-- 상품 상세 조회 -->
+	<select id="getGoodsDetail" resultType="com.tis.domain.GoodsVO">
+		SELECT * 
+		FROM tbl_goods 
+		WHERE goodsNo = #{goodsNo}
+	</select>
+	
+	<!-- 메인 상품 총 갯수 조회-->
+	<select id="getGoodsTotalMain" resultType="int">
+		SELECT count(*)
+		FROM tbl_goods g LEFT JOIN tbl_category c
+		ON g.goodsCategory = c.categorySubTitle
+		WHERE categoryTitle = #{categoryTitle}		
+	</select>
+	
+	<!-- 서브 상품 총 갯수 조회 -->
+	<select id="getGoodsTotalSub" resultType="int">
+		SELECT count(*)
+		FROM tbl_goods g LEFT JOIN tbl_category c
+		ON g.goodsCategory = c.categorySubTitle
+		WHERE goodsCategory = #{categorySubTitle}		
+	</select>
+	
+	<!-- 메인 홈페이지 상품 리스트 -->
+	<select id="getMainGoodsList" resultType="com.tis.domain.GoodsVO">
+		SELECT *
+		FROM tbl_goods		
+	</select>
+	
+	<select id="getSearchList" resultType="com.tis.domain.GoodsVO">
+		<![CDATA[
+		SELECT goodsNo,goodsCategory,goodsName,goodsContent,goodsPrice,goodsImage
+		FROM ( SELECT rownum rn, goodsNo,goodsCategory,goodsName,goodsContent,goodsPrice,goodsImage
+			   FROM tbl_goods
+			   WHERE rownum <= #{cri.pageNum} * #{cri.amount}
+			   AND goodsName LIKE '%' || #{keyword} || '%'
+			   OR goodsContent LIKE '%' || #{keyword} || '%'		 
+		]]>	
+			<if test='priceSort != null and (priceSort eq "asc".toString())'>
+				ORDER BY goodsPrice ASC
+			</if>
+			<if test='priceSort != null and (priceSort eq "desc".toString())'>
+				ORDER BY goodsPrice DESC
+			</if>
+			<if test='priceSort != null and (priceSort eq "new".toString())'>
+				ORDER BY goodsregDate DESC
+			</if>
+		<![CDATA[   
+			  )
+		WHERE rn > (#{cri.pageNum} - 1) * #{cri.amount}  
+		]]>
+	</select>
+	
+	<select id="getSearchListTotal" resultType="int">
+		SELECT count(*)
+		FROM tbl_goods
+	    WHERE goodsName LIKE '%' || #{keyword} || '%'
+        OR   goodsContent LIKE '%' || #{keyword} || '%'	
+	</select>
+	
+	<!-- 게시글 상품리스트 관리 출력 -->
+	<!-- <select id="boardGetGoodsList" resultType="com.tis.domain.GoodsVO">
+		select *
+		from tbl_goods
+	</select> -->
+	
+</mapper>
